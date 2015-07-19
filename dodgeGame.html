@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phaser - Arcade Dodge</title>
+  <script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var platforms,
+  player,
+  cursors,
+  stars,
+  star,
+  lives,
+  score     = 0,
+  game      = new Phaser.Game(
+    800,
+    500,
+    Phaser.AUTO,
+    '',
+    { preload: preload, create: create, update: update }
+  ),
+  levelText,
+  scoreText,
+  starsText,
+  messageText,
+  level   = 0,
+  levels  = [{
+    stars: 20,
+    max: 5,
+    gravity: 100,
+    attraction: 0
+  }];
+
+function preload() {
+  game.load.image('sky', 'assets/sky.png');
+  game.load.image('ground', 'assets/platform.png');
+  game.load.image('star', 'assets/star.png');
+  game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+  game.load.image('heart', 'assets/heart.png');
+}
+
+function create() {
+  createWorld();
+  createPlayer();
+
+  stars = game.add.group();
+  stars.enableBody = true;
+
+  setTexts();
+  bumpLevel();
+}
+
+function setTexts() {
+  scoreText = game.add.text(16, 16, 'Score: 0',
+    {fontSize: '32px', fill: '#000'}
+  );
+
+  levelText = game.add.text(300, 16, '',
+    {fontSize: '32px', fill: '#000'}
+  );
+
+  starsText = game.add.text(600, 16, '',
+    {fontSize: '32px', fill: '#000'}
+  );
+
+  messageText = game.add.text(300, 200, '',
+    {fontSize: '48px', fill: '#000'}
+  );
+}
+
+function bumpLevel(lvl) {
+  lvl               = lvl || level.lvl + 1  || 0;
+  level             = {
+    lvl:        lvl,
+    actives:    0,
+    message:    level[lvl] ? level[lvl].message : '',
+    max:        defaultLevelValues('max', 1, 5),
+    left:       defaultLevelValues('stars', 1, 5),
+    stars:      defaultLevelValues('stars', 5, 10),
+    gravity:    defaultLevelValues('gravity', 20, 50),
+    attraction: defaultLevelValues('attraction', 2, 0),
+    score:      defaultLevelValues('score', 5, 5)
+  };
+  console.log('bumping to level ' + lvl, level);
+
+  levelText.text = 'Level: ' + (lvl + 1);
+
+  messageText.text = level.message || 'Next Level: ' + (lvl + 1);
+
+
+  setTimeout(function() {
+    messageText.text = '';
+    console.log("bumpLevel start stars");
+    throwStar();
+  }, 4000);
+}
+
+function defaultLevelValues(attr, inc, defaultVal) {
+  var lvl = (level && level.lvl) || 0;
+  inc = inc ? inc : 1;
+
+  if (levels[lvl] && levels[lvl][attr]) {
+    return levels[lvl][attr]
+  } else if (level && level[attr]) {
+     return level[attr] + inc;
+  }
+
+  return defaultVal ? defaultVal : 0;
+}
+
+
+function throwStar() {
+  console.log('throwStar()');
+
+    if (level.actives < level.max && level.left >0) {
+
+    createStar();
+    setTimeout(function() {throwStar();}, 500);
+    }
+}
+
+function createStar(x, grav) {
+  if (level.left <= 0 || level.actives >= level.max) {
+    return;
+  }
+  // game over
+  if (!stars) {
+    return;
+  }
+
+  level.actives++;
+  level.left--;
+  console.log(level);
+  grav = grav || level.gravity || 0;
+  x    = x || (Math.random() * 24) - 1;
+  star = stars.create(x * 35, 0, 'star');
+  star.body.gravity.y = grav + Math.random() * 50;
+  star.body.bounce.y = 0.3 + Math.random() * 0.3;
+
+  star.hits = level.hits || 2;
+
+  starsText.text = 'Stars: ' + (level.left ) + '/' + level.actives;
+}
+
+function crashStar(platform, star) {
+  if(--star.hits > 0) {
+    return;
+  }
+console.log('crashStar', level);
+  level.actives-=1;
+
+console.log('crashStar2', level);
+  star.kill();
+
+  starsText.text =
+    'Stars: ' + (level.left)  + '/' + level.actives;
+
+  star.kill();
+
+  score += level.score || 10;
+  scoreText.text = 'Score: ' + score;
+
+  if (level.left > 0) {
+    createStar();
+  } else if(level.actives <= 0) {
+    bumpLevel();
+  }
+}
+
+function createWorld() {
+  var ground;
+
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+
+  game.add.sprite(0, 0, 'sky');
+
+  platforms = game.add.group();
+  platforms.enableBody = true;
+
+  ground = platforms.create(0, game.world.height - 64, 'ground');
+  ground.scale.setTo(2, 2);
+  ground.body.immovable = true;
+}
+
+function createPlayer(){
+  player = game.add.sprite(400, game.world.height -150, 'dude');
+  game.physics.arcade.enable(player);
+  player.body.bounce.y = 0.2;
+  player.body.gravity.y = 500;
+  player.body.collideWorldBounds = true;
+
+  player.animations.add('left', [0, 1, 2, 3], 10, true);
+  player.animations.add('right', [5, 6, 7, 8], 10, true);
+
+  player.lives = 3;
+
+  drawLives();
+
+  cursors = game.input.keyboard.createCursorKeys();
+}
+
+function drawLives() {
+  if (lives) {
+    lives.destroy();
+  }
+
+  lives = game.add.group();
+  lives.enableBody = true;
+
+  for (var i = 0; i < player.lives; i++) {
+    life = lives.create(32 + (40 * i), 40, 'heart');
+    life.body.immovable = true;
+  }
+}
+
+function update() {
+  game.physics.arcade.collide(player, platforms);
+  game.physics.arcade.collide(player, stars, killPlayer, null, this);
+
+  game.physics.arcade.collide(platforms, stars, crashStar, null, this);
+
+  playerMove();
+}
+
+function killPlayer(player, star) {
+  star.kill();
+
+  player.score -= 50;
+
+  player.lives--;
+  console.log(player.lives);
+  drawLives();
+
+  if (player.lives <= 0) {
+    player.kill();
+
+    stars.destroy();
+    messageText.text = 'You got hit on the head';
+  }
+}
+
+function playerMove() {
+  player.body.velocity.x = 0;
+
+  if (cursors.left.isDown) {
+    player.body.velocity.x = -150;
+    player.animations.play('left');
+  } else if (cursors.right.isDown) {
+    player.body.velocity.x = 150;
+    player.animations.play('right');
+  } else {
+    player.animations.stop();
+    player.frame = 4;
+  }
+
+  if (cursors.up.isDown && player.body.touching.down) {
+    player.body.velocity.y = -200;
+  }
+}
+</script>
+
+</body>
+</html>
