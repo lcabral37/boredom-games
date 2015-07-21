@@ -31,7 +31,7 @@ var
       chance: {
         rock: 1,
         star: 0,
-        heart: .5
+        heart: .05
       },
       message: 'Those rocks look really heavy.\n   Better stay out of their way...'
     },
