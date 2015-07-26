@@ -18,10 +18,7 @@ var
     '',
     { preload: preload, create: create, update: update }
   ),
-  levelText,
-  scoreText,
-  projectileText,
-  messageText,
+  hud = new Hud(game),
   level   = 0,
   levels  = {
     '0': {
@@ -83,29 +80,21 @@ function update() {
 function setTexts() {
   var index = width / 12;
 
-  scoreText = game.add.text(index * 1 , 16, 'Score: 000000',
-    {fontSize: '32px', fill: '#000'}
-  );
+  hud.add(index * 1, 16, 'score');
+  hud.add(index * 5, 16, 'level');
+  hud.add(index * 9, 16, 'projectile');
+  hud.add(index * 4, heigth/3, 'center', '48px');
 
-  levelText = game.add.text( index * 5 , 16, '',
-    {fontSize: '32px', fill: '#000'}
-  );
-
-  projectileText = game.add.text(index * 9 , 16, '',
-    {fontSize: '32px', fill: '#000'}
-  );
-
-  messageText = game.add.text(index * 4 , heigth / 3 , '',
-    {fontSize: '48px', fill: '#000'}
-  );
+  hud.update('score', 'Score: 000000');
 }
 
 function showMessage(message, timeOut) {
-  messageText.text = message;
   timeOut = timeOut >= 500 ? timeOut : 4000;
 
+  hud.update('center', message);
+
   setTimeout(function() {
-    messageText.text = '';
+    hud.update('center', '');
   }, timeOut);
 }
 
@@ -129,11 +118,8 @@ function bumpLevel(lvl) {
   level.chance.star  = null != level.chance.star  ? level.chance.star  : 0.35;
   level.chance.rock  = null != level.chance.rock  ? level.chance.rock : 0.6;
 
-  levelText.text = 'Level: ' + (lvl + 1);
-
+  hud.update('level', 'Level: ' + (lvl + 1));
   showMessage(level.message || 'Next Level: ' + (lvl + 1));
-
-  console.log('chance', level.chance);
 
   setTimeout(function() {
     throwProjectile();
@@ -203,7 +189,7 @@ function createProjectile(x, grav) {
 }
 
 function drawProjectileText() {
-  projectileText.text = 'Moon rocks: ' + (level.left);
+  hud.update('projectile', 'Moon rocks: ' + (level.left));
 }
 
 function crashProjectile(projectile) {
@@ -219,7 +205,8 @@ function crashProjectile(projectile) {
   drawProjectileText();
   score = scoreCard.add(projectile.score);
 
-  scoreText.text = "Score: " + pad(score, 6);
+
+  hud.update('score', 'Score: ' + hud.pad(score, 6));
 
   projectile.kill();
 
@@ -354,21 +341,16 @@ function stillAlive() {
 }
 
 function displayHighScores(message) {
-  var scores   = pad(false, 4) + "Score    Level\n",
+  var scores   = hud.pad(false, 4) + "Score    Level\n",
     highScores = scoreCard.loadHistory();
 
   for (var i = 0; i< highScores.length ; i++) {
-    scores += pad(false, 4) +
-      pad(highScores[i].score, 6) + "   " +
-      pad(highScores[i].level, 3) + "\n";
+    scores += hud.pad(false, 4) +
+      hud.pad(highScores[i].score, 6) + "   " +
+      hud.pad(highScores[i].level, 3) + "\n";
   }
 
   showMessage(scores + "\n" + message, 10000);
-}
-
-function pad(num, size) {
-  var s = num != null && num != false ? "000000000" + num : "          ";
-  return s.substr(s.length-size);
 }
 
 function playerMove() {
