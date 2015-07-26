@@ -7,7 +7,6 @@ var
   cards,
   totalCards = 76,
   cardsUp = [],
-  score   = 0,
   level   = 1,
   leftOnTable = 0,
   game      = new Phaser.Game(
@@ -16,7 +15,10 @@ var
     Phaser.AUTO,
     '',
     { preload: preload, create: create, update: update }
-  );
+  ),
+
+  scoreCard = new ScoreCard('memory'),
+  hud = new Hud(game);
 
 function preload() {
   for (var i = 1 ; i <= 76; i++ ) {
@@ -35,6 +37,9 @@ function create() {
   cards   = game.add.group();
 
   game.add.sprite(0, 0, 'table');
+  hud.add(10, 10, 'score');
+
+  hud.update('score', 'Score: ', hud.pad(0, 3));
 
   placeCards(2, 2);
 }
@@ -86,8 +91,8 @@ function initDeck(limit) {
   while(deck.length < limit) {
     candidate = parseInt(Math.random() * totalCards) + 1;
     if (!pickPool[candidate]) {
-      deck.push({card: candidate, faceUp: false, pair: 1});
-      deck.push({card: candidate, faceUp: false, pair: 2});
+      deck.push({card: candidate, faceUp: false, pair: 1, views: 0});
+      deck.push({card: candidate, faceUp: false, pair: 2, views: 0});
       pickPool[candidate] = true;
     }
   }
@@ -119,6 +124,7 @@ function shuffle(deck) {
 function flipCard(card) {
   var key = 'back';
   card.card.faceUp = !card.card.faceUp;
+  card.card.views++;
 
   if (card.card.faceUp && cardsUp.length < 2) {
     key = 'card_' + card.card.card;
@@ -135,6 +141,8 @@ function flip(card, key) {
 }
 
 function checkCardsUp () {
+  var score;
+
   if (cardsUp.length < 2) {
     return;
   }
@@ -142,9 +150,16 @@ function checkCardsUp () {
   console.log(cardsUp[0].card, cardsUp[1].card);
 
   if (cardsUp[0].card.card === cardsUp[1].card.card) {
+    score = cardsUp[0].card.views + cardsUp[1].card.views;
+    score = ((level * 4 * 2) - score) * 10;
+    console.log(score, level * 4 , score);
+    score = scoreCard.add(score);
+    hud.update('score', 'Score: ' + hud.pad(score, 3));
+
     cardsUp[0].destroy();
     cardsUp[1].destroy();
     leftOnTable -=2;
+
     checkBoard();
   } else {
     cardsUp[0].card.faceUp = false;
