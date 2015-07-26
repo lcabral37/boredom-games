@@ -10,7 +10,7 @@ var
   projectiles,
   ground,
   lives,
-  score     = 0,
+  scoreCard = new ScoreCard('dodge'),
   game      = new Phaser.Game(
     width,
     heigth,
@@ -83,7 +83,7 @@ function update() {
 function setTexts() {
   var index = width / 12;
 
-  scoreText = game.add.text(index * 1 , 16, 'Score: 0',
+  scoreText = game.add.text(index * 1 , 16, 'Score: 000000',
     {fontSize: '32px', fill: '#000'}
   );
 
@@ -207,6 +207,8 @@ function drawProjectileText() {
 }
 
 function crashProjectile(projectile) {
+  var score;
+
   if(--projectile.hits > 0) {
     return;
   }
@@ -215,21 +217,17 @@ function crashProjectile(projectile) {
   projectile.kill();
 
   drawProjectileText();
-  addScore(projectile.score);
+  score = scoreCard.add(projectile.score);
+
+  scoreText.text = "Score: " + pad(score, 6);
 
   projectile.kill();
-
 
   if (level.left > 0) {
     createProjectile();
   } else if(level.actives <= 0) {
     bumpLevel();
   }
-}
-
-function addScore(inc) {
-  score += inc || 0;
-  scoreText.text = 'Score: ' + pad(score, 6);
 }
 
 function createWorld() {
@@ -328,14 +326,10 @@ function hitPlayer(player, projectile) {
 }
 
 function killPlayer (player, rock) {
-  var highScores;
-
   player.lives--;
 
   playerHurt();
-
   rock.kill();
-
   drawLives();
 
   rock.hits = 0;
@@ -349,33 +343,10 @@ function killPlayer (player, rock) {
 
   player.body.collideWorldBounds = true;
 
+  scoreCard.save(null, level.lvl + 1 );
+  scoreCard.reset();
+
   displayHighScores("You got hit hard on the head!\n   Press SPACE to restart.")
-}
-
-function storeHighScore() {
-  var highScores = localStorage.dodge01HighScore ?
-    JSON.parse(localStorage.dodge01HighScore) :
-    [];
-
-  if (score) {
-    highScores.push({
-      score: score,
-      level: level.lvl + 1,
-      date: new Date()
-    });
-
-    highScores = highScores.sort(function(a, b) {
-      return b.score - a.score;
-    });
-  }
-
-  if (highScores.length > 5) {
-    highScores.pop();
-  }
-
-  localStorage.dodge01HighScore = JSON.stringify(highScores);
-
-  return highScores;
 }
 
 function stillAlive() {
@@ -383,8 +354,8 @@ function stillAlive() {
 }
 
 function displayHighScores(message) {
-  var highScores = storeHighScore(),
-    scores       = pad(false, 4) + "Score    Level\n";
+  var scores   = pad(false, 4) + "Score    Level\n",
+    highScores = scoreCard.loadHistory();
 
   for (var i = 0; i< highScores.length ; i++) {
     scores += pad(false, 4) +
@@ -405,10 +376,8 @@ function playerMove() {
 
   if (!stillAlive()) {
     if (game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
-      score = 0;
       level = null;
       player.kill()
-      addScore();
       createPlayer();
       bumpLevel();
     }
