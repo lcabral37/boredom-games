@@ -274,7 +274,7 @@ function drawLives() {
   lives = game.add.group();
   lives.enableBody = true;
 
-  for (var i = 0; i < player.lives; i++) {
+  for (var i = 1; i <= player.lives; i++) {
     life = lives.create((width/12) + (40 * i), 40, 'heart');
     life.body.immovable = true;
   }
@@ -360,7 +360,7 @@ function storeHighScore() {
   if (score) {
     highScores.push({
       score: score,
-      level: level.lvl,
+      level: level.lvl + 1,
       date: new Date()
     });
 
