@@ -5,13 +5,24 @@ I'm Bored so I'm taking a look at
 friendly perspective. Mainly I've started from the Phaser tutorial an will move
 on from there.
 
+
 = So what have we got so far? =
 Nothing
+
+== Quick run ==
+Serve it locally:
+```
+npm ci
+npm run start
+```
 
 == 01 Dodge game ==
 
 Quick and dirty raw implementation of a simple game of dodging some falling sky
-pieces, grabing others. Incremental difficulty, togheter with a small randomness.
+pieces, grabbing others. Incremental difficulty, together with a small randomness.
+
+== 02 card memory game  ==
+A Pokemon  card memory game
 
 = License =
  Check the big with the big letters
